@@ -1,12 +1,49 @@
-// SPDX-License-Identifier: SEE LICENSE IN LICENSE
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
 import {IQuoter} from "@uniswapV3-periphery/interfaces/IQuoter.sol";
 
 contract PriceFetcher {
-    IQuoter public quoter;
+    enum Chain {
+        ETHEREUM,
+        ARBITRUM
+    }
 
-    constructor(address _quoter) {
-        quoter = IQuoter(_quoter);
+    enum ReqType {
+        EXACT_INPUT_TO_OUTPUT,
+        EXACT_OUTPUT_TO_INPUT
+    }
+
+    struct PriceFetcherParams {
+        Chain chain;
+        ReqType reqType;
+        address tokenIn;
+        uint256 amountIn;
+        address tokenOut;
+        uint256 amountOut;
+        uint24 fee;
+    }
+
+    address public s_quoterEthereum;
+    address public s_quoterArbitrum;
+
+    constructor(address _quoterEthereum, address _quoterArbitrum) {
+        s_quoterEthereum = _quoterEthereum;
+        s_quoterArbitrum = _quoterArbitrum;
+    }
+
+    function getPrice(PriceFetcherParams memory params) external returns (uint256 price) {
+        if (params.chain == Chain.ETHEREUM)
+            price = getPriceEthereum(params);
+    }
+
+    function getPriceEthereum(PriceFetcherParams memory params) internal returns (uint256) {
+        IQuoter quoter = IQuoter(s_quoterEthereum);
+
+        if (params.reqType == ReqType.EXACT_INPUT_TO_OUTPUT)
+            return quoter.quoteExactInputSingle(params.tokenIn, params.tokenOut, params.fee, params.amountIn, 0);
+        else
+            return quoter.quoteExactOutputSingle(params.tokenIn, params.tokenOut, params.fee, params.amountOut, 0);
     }
 }
+
