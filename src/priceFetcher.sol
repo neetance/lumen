@@ -34,11 +34,15 @@ contract PriceFetcher {
 
     function getPrice(PriceFetcherParams memory params) external returns (uint256 price) {
         if (params.chain == Chain.ETHEREUM)
-            price = getPriceEthereum(params);
+            price = getPrice(params, s_quoterEthereum);
+        else if (params.chain == Chain.ARBITRUM)
+            price = getPrice(params, s_quoterArbitrum);
+        else
+            revert("Invalid chain");
     }
 
-    function getPriceEthereum(PriceFetcherParams memory params) internal returns (uint256) {
-        IQuoter quoter = IQuoter(s_quoterEthereum);
+    function getPrice(PriceFetcherParams memory params, address _quoter) internal returns (uint256) {
+        IQuoter quoter = IQuoter(_quoter);
 
         if (params.reqType == ReqType.EXACT_INPUT_TO_OUTPUT)
             return quoter.quoteExactInputSingle(params.tokenIn, params.tokenOut, params.fee, params.amountIn, 0);
@@ -46,4 +50,3 @@ contract PriceFetcher {
             return quoter.quoteExactOutputSingle(params.tokenIn, params.tokenOut, params.fee, params.amountOut, 0);
     }
 }
-
